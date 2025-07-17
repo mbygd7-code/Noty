@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유치원 알림장 생성기</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Colorful and subtle gradient background with animation */
+            background: linear-gradient(135deg, #e0f2fe, #e8eaf6, #ede7f6); /* Soft blue, lavender, light purple */
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite; /* Smooth, continuous movement */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px; /* Default padding for larger screens */
+            box-sizing: border-box;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 20px; /* More rounded corners */
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); /* Stronger, more prominent shadow */
+            padding: 40px; /* Increased padding inside the container for larger screens */
+            max-width: 700px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 28px; /* More spacing between elements */
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Input fields and textarea styling */
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db; /* Slightly darker border for better contrast */
+            border-radius: 10px; /* Slightly more rounded inputs */
+            font-size: 16px;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #6366f1; /* Indigo-500 for focus border */
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3); /* Indigo-500 with transparency for focus glow */
+        }
+
+        textarea::placeholder { /* Placeholder text styling: Changed to a darker gray for better visibility */
+            color: #4b5563; /* Gray-700 for placeholder */
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Button group for side-by-side buttons */
+        .button-group {
+            display: flex;
+            flex-direction: column; /* Stack buttons on small screens */
+            gap: 16px; /* Space between buttons */
+        }
+
+        @media (min-width: 640px) {
+            .button-group {
+                flex-direction: row; /* Side-by-side on larger screens */
+            }
+            .button-group button {
+                flex: 1; /* Distribute space evenly */
+            }
+        }
+
+        /* Generate button styling - prominent and colorful */
+        button {
+            background-image: linear-gradient(to right, #6366f1, #8b5cf6); /* Indigo to Purple gradient */
+            color: white;
+            padding: 18px 36px; /* Much larger padding for a prominent button */
+            border-radius: 12px; /* More rounded button */
+            font-size: 22px; /* Larger font size for the button text */
+            font-weight: 700; /* Bolder text */
+            cursor: pointer;
+            transition: all 0.3s ease-in-out; /* Smooth transitions for hover effects */
+            border: none;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); /* Soft shadow with primary color tint */
+            letter-spacing: 0.5px; /* Slightly increased letter spacing */
+        }
+
+        button:hover {
+            background-image: linear-gradient(to right, #4f46e5, #7c3aed); /* Darker gradient on hover */
+            transform: translateY(-3px) scale(1.02); /* Subtle lift and slight growth on hover */
+            box-shadow: 0 12px 25px rgba(99, 102, 241, 0.6); /* More pronounced shadow on hover */
+        }
+
+        button:active {
+            transform: translateY(0) scale(1); /* Reset on click */
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3); /* Smaller shadow on click */
+        }
+
+        /* Age group buttons specific styling */
+        .age-buttons-group {
+            display: flex;
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+            gap: 10px; /* Space between age buttons */
+            justify-content: center; /* Center align buttons */
+            margin-bottom: 20px; /* Space below age buttons */
+        }
+
+        .age-button {
+            background-color: #a78bfa; /* Light purple for age buttons */
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            border: none;
+            box-shadow: 0 4px 10px rgba(167, 139, 250, 0.3);
+        }
+
+        .age-button:hover {
+            background-color: #8b5cf6; /* Darker purple on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(167, 139, 250, 0.4);
+        }
+
+        .age-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 8px rgba(167, 139, 250, 0.2);
+        }
+
+        /* Active state for age buttons - more distinct blue */
+        .age-button.active {
+            background-color: #3b82f6; /* A clear, distinct blue for active state (Tailwind blue-500) */
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.6); /* Stronger, blue-tinted shadow */
+            border: 2px solid #1e40af; /* Darker blue border (Tailwind blue-800) */
+            transform: translateY(0); /* Ensure it stays flat when active */
+        }
+
+
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #6366f1; /* Spinner color matching the theme */
+            border-radius: 50%;
+            width: 28px; /* Slightly larger spinner */
+            height: 28px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .report-output {
+            background-color: #f8fafc; /* Very light background for output */
+            border: 1px solid #e2e8f0; /* Light border */
+            border-radius: 12px; /* Rounded corners */
+            padding: 24px; /* Generous padding */
+            min-height: 120px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #334155; /* Darker text for readability */
+            font-size: 17px; /* Slightly larger font */
+            line-height: 1.7; /* Increased line height for better readability */
+        }
+
+        .error-message {
+            color: #ef4444; /* Red for error messages */
+            font-size: 15px;
+            font-weight: 500;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* Mobile responsiveness adjustments */
+        /* For screens smaller than 640px (typical mobile portrait) */
+        @media (max-width: 640px) {
+            body {
+                padding: 10px; /* Reduce overall padding for very small screens */
+            }
+            .container {
+                padding: 20px; /* Adjust container padding for mobile */
+                gap: 18px; /* Adjust spacing for mobile */
+                border-radius: 16px;
+            }
+            h1 {
+                font-size: 1.8rem; /* Adjust heading size for mobile */
+                margin-bottom: 15px;
+            }
+            p { /* Description text */
+                font-size: 0.9rem;
+                margin-bottom: 15px;
+            }
+            label {
+                font-size: 0.95rem; /* Adjust label size for mobile */
+            }
+            input[type="text"],
+            textarea,
+            .report-output {
+                font-size: 14px; /* Slightly smaller font for inputs and output on mobile */
+                padding: 10px 12px; /* Adjust padding for inputs */
+            }
+            button {
+                padding: 14px 25px; /* Adjust button size for mobile */
+                font-size: 18px;
+            }
+            .age-button {
+                padding: 7px 12px; /* Smaller padding for age buttons on mobile */
+                font-size: 13px; /* Smaller font for age buttons on mobile */
+            }
+            .button-group {
+                flex-direction: column; /* Ensure buttons stack on mobile */
+            }
+        }
+
+        /* For screens between 641px and 768px (typical tablet portrait) */
+        @media (min-width: 641px) and (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            .container {
+                padding: 30px;
+                gap: 24px;
+            }
+            h1 {
+                font-size: 2.2rem;
+            }
+            button {
+                padding: 16px 30px;
+                font-size: 20px;
+            }
+        }
+
+        /* History Icon Styling */
+        .history-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 2.5rem; /* Larger icon */
+            color: #4f46e5; /* Indigo-600 */
+            transition: transform 0.2s ease-in-out;
+            z-index: 10; /* Ensure it's above other elements */
+        }
+
+        .history-icon:hover {
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 640px) {
+            .history-icon {
+                top: 15px;
+                right: 15px;
+                font-size: 2rem; /* Adjust for mobile */
+            }
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100; /* Above everything else */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Modal Content */
+        .modal-content {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh; /* Max height to allow scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+
+        .modal-overlay.visible .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #6b7280; /* Gray-500 */
+            cursor: pointer;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .modal-close-btn:hover {
+            color: #ef4444; /* Red-500 */
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        .history-item {
+            background-color: #f3f4f6; /* Gray-100 */
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .history-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-item-date {
+            font-size: 0.9rem;
+            color: #6b7280; /* Gray-500 */
+            margin-bottom: 5px;
+        }
+
+        .history-item-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #374151; /* Gray-700 */
+            margin-bottom: 5px;
+        }
+
+        .history-item-keywords,
+        .history-item-report {
+            font-size: 0.95rem;
+            color: #4b5563; /* Gray-600 */
+            margin-bottom: 5px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .history-item-report {
+            border-top: 1px dashed #d1d5db;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .history-empty-message {
+            text-align: center;
+            color: #6b7280;
+            padding: 20px;
+        }
+
+        /* Firestore User ID Display */
+        .user-id-display {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: #9ca3af; /* Light gray */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+        }
+
+        /* New No History Message Modal Styling */
+        .no-history-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 101; /* Higher than history modal */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .no-history-modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .no-history-modal-content {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 80%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+
+        .no-history-modal-overlay.visible .no-history-modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .no-history-modal-content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 15px;
+        }
+
+        .no-history-modal-content p {
+            font-size: 1rem;
+            color: #4b5563;
+            margin-bottom: 20px;
+        }
+
+        .no-history-modal-close-btn {
+            background-color: #6366f1; /* Indigo-500 */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .no-history-modal-close-btn:hover {
+            background-color: #4f46e5; /* Indigo-600 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">유치원 알림장 생성기</h1>
+        <p class="text-center text-gray-600 mb-6">아이 이름과 키워드를 입력하여 부모님께 보낼 알림장과 추가 메시지를 손쉽게 생성하세요!</p>
+
+        <!-- History Icon -->
+        <div id="historyIcon" class="history-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89l.33.28L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7s-3.13 7-7 7c-1.51 0-2.91-.49-4.06-1.3l-1.42 1.42C9.17 21.1 10.9 22 13 22c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.25 2.52l.75-1.23l-3.5-2.08V8z"/></svg>
+        </div>
+
+        <!-- Age group buttons -->
+        <div class="age-buttons-group">
+            <button class="age-button" data-age="0-2">0~2세</button>
+            <button class="age-button" data-age="3">만3세</button>
+            <button class="age-button" data-age="4">만4세</button>
+            <button class="age-button" data-age="5">만5세</button>
+        </div>
+
+        <div class="input-group">
+            <label for="childName" class="block text-gray-700 text-lg font-medium mb-2">아이 이름:</label>
+            <input type="text" id="childName" placeholder="예: 김민준" class="rounded-lg">
+        </div>
+
+        <div class="input-group">
+            <label for="keywords" class="block text-gray-700 text-lg font-medium mb-2">오늘의 키워드 (쉼표로 구분):</label>
+            <textarea id="keywords" placeholder="예: 즐겁게 놀이함, 친구와 협동, 점심 잘 먹음, 낮잠 푹 잠" class="rounded-lg"></textarea>
+        </div>
+
+        <div class="button-group">
+            <button id="generateBtn" class="rounded-lg">알림장 생성</button>
+            <button id="suggestMessageBtn" class="rounded-lg">✨ 추가 메시지 제안</button>
+        </div>
+
+        <div class="loading-spinner" id="loadingSpinner"></div>
+        <div class="loading-spinner" id="suggestMessageSpinner"></div>
+
+
+        <div class="report-output" id="reportOutput">
+            여기에 생성된 알림장이 표시됩니다.
+        </div>
+        <div id="errorMessage" class="error-message"></div>
+
+        <!-- User ID Display -->
+        <div id="userIdDisplay" class="user-id-display"></div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <button id="modalCloseBtn" class="modal-close-btn">&times;</button>
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">기록된 알림장</h2>
+            <div id="historyListContainer" class="history-list">
+                <!-- History items will be loaded here -->
+                <!-- The historyEmptyMessage is now handled by the separate no-history modal -->
+            </div>
+            <div class="loading-spinner" id="historyLoadingSpinner"></div>
+        </div>
+    </div>
+
+    <!-- No History Message Modal -->
+    <div id="noHistoryModalOverlay" class="no-history-modal-overlay">
+        <div class="no-history-modal-content">
+            <h3>알림</h3>
+            <p id="noHistoryMessageText">기록된 알림장이 없습니다.</p>
+            <button id="noHistoryCloseBtn" class="no-history-modal-close-btn">확인</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase (MUST BE USED)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let unsubscribeFromHistory = null; // To store the unsubscribe function for onSnapshot
+
+        // Initialize Firebase and authenticate
+        async function initializeFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            document.getElementById('userIdDisplay').textContent = `사용자 ID: ${userId}`;
+                            console.log("Firebase authenticated. User ID:", userId);
+                            // No need to setup history listener immediately on auth change
+                            // It will be set up when the history icon is clicked.
+                        } else {
+                            // Sign in anonymously if no initial token or user
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        }
+                    });
+                } else {
+                    console.error("Firebase config is missing. Cannot initialize Firebase.");
+                    errorMessageDiv.textContent = 'Firebase 설정이 누락되어 데이터를 저장할 수 없습니다.';
+                }
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                errorMessageDiv.textContent = `Firebase 초기화 중 오류 발생: ${error.message}`;
+            }
+        }
+
+        // Call Firebase initialization
+        initializeFirebase();
+
+        // Get references to DOM elements
+        const childNameInput = document.getElementById('childName');
+        const keywordsInput = document.getElementById('keywords');
+        const generateBtn = document.getElementById('generateBtn');
+        const suggestMessageBtn = document.getElementById('suggestMessageBtn');
+        const reportOutput = document.getElementById('reportOutput');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const suggestMessageSpinner = document.getElementById('suggestMessageSpinner');
+        const errorMessageDiv = document.getElementById('errorMessage');
+        const ageButtons = document.querySelectorAll('.age-button');
+
+        // History Modal Elements
+        const historyIcon = document.getElementById('historyIcon');
+        const historyModalOverlay = document.getElementById('historyModalOverlay');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const historyListContainer = document.getElementById('historyListContainer');
+        const historyLoadingSpinner = document.getElementById('historyLoadingSpinner');
+
+        // New No History Message Modal Elements
+        const noHistoryModalOverlay = document.getElementById('noHistoryModalOverlay');
+        const noHistoryMessageText = document.getElementById('noHistoryMessageText');
+        const noHistoryCloseBtn = document.getElementById('noHistoryCloseBtn');
+
+
+        // Event listeners for the main buttons
+        generateBtn.addEventListener('click', generateReport);
+        suggestMessageBtn.addEventListener('click', suggestAdditionalMessage);
+
+        // Event listeners for age buttons
+        ageButtons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                ageButtons.forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+                const ageGroup = event.target.dataset.age;
+                populateKeywordsByAge(ageGroup);
+            });
+        });
+
+        // Event listeners for History Modal
+        historyIcon.addEventListener('click', showHistoryModal);
+        modalCloseBtn.addEventListener('click', hideHistoryModal);
+        historyModalOverlay.addEventListener('click', (event) => {
+            if (event.target === historyModalOverlay) { // Close only if clicking on the overlay itself
+                hideHistoryModal();
+            }
+        });
+
+        // Event listener for No History Message Modal
+        noHistoryCloseBtn.addEventListener('click', hideNoHistoryMessage);
+        noHistoryModalOverlay.addEventListener('click', (event) => {
+            if (event.target === noHistoryModalOverlay) {
+                hideNoHistoryMessage();
+            }
+        });
+
+        /**
+         * Populates the keywords textarea based on the selected age group.
+         * @param {string} ageGroup - The selected age group ('0-2', '3', '4', '5').
+         */
+        function populateKeywordsByAge(ageGroup) {
+            let keywords = '';
+            switch (ageGroup) {
+                case '0-2':
+                    keywords = '기어다니며 탐색함, 까꿍 놀이 즐김, 옹알이하며 의사 표현, 블록 쌓기 시도, 손가락으로 가리키며 요구, 엄마/아빠에게 애착 표현';
+                    break;
+                case '3': // 만3세
+                    keywords = '친구와 함께 놀이함, 블록으로 성 만들기, 질문이 많아짐, 스스로 옷 입기 시도, 간단한 규칙 이해, 좋아하는 그림 그리기';
+                    break;
+                case '4': // 만4세
+                    keywords = '역할 놀이에 적극 참여, 친구와 양보하며 놀이, 동화 내용 이해, 글자 모양에 관심, 감정 표현 및 조절, 대근육 발달(뛰기, 점프)';
+                    break;
+                case '5': // 만5세
+                    keywords = '친구들과 협동하여 프로젝트 완성, 자신의 생각 논리적으로 표현, 한글에 관심 많음, 스스로 정리 정돈, 문제 해결 능력 발휘, 유창하게 대화';
+                    break;
+                default:
+                    keywords = '';
+            }
+            keywordsInput.value = keywords;
+            errorMessageDiv.textContent = ''; // Clear any previous error messages
+        }
+
+
+        /**
+         * Generates the daily report using the Gemini API and saves it to Firestore.
+         */
+        async function generateReport() {
+            const childName = childNameInput.value.trim();
+            const keywords = keywordsInput.value.trim();
+            const activeAgeButton = document.querySelector('.age-button.active');
+            const ageGroup = activeAgeButton ? activeAgeButton.dataset.age : '정보 없음';
+
+            if (!childName) {
+                errorMessageDiv.textContent = '아이 이름을 입력해주세요.';
+                return;
+            }
+            if (!keywords) {
+                errorMessageDiv.textContent = '오늘의 키워드를 입력해주세요.';
+                return;
+            }
+
+            reportOutput.textContent = '';
+            errorMessageDiv.textContent = '';
+            loadingSpinner.style.display = 'block';
+            generateBtn.disabled = true;
+            suggestMessageBtn.disabled = true;
+
+            try {
+                const prompt = `유치원 교사가 부모님께 보내는 알림장 문장을 작성해줘. 아이 이름은 "${childName}"이고, 연령은 ${ageGroup}세이며, 오늘 있었던 일의 키워드는 다음과 같아: "${keywords}". 연령에 맞는 발달 특성을 고려하여 자연스럽고 긍정적인 어조로 작성해줘.`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API 오류: ${response.status} - ${errorData.error.message || '알 수 없는 오류'}`);
+                }
+
+                const result = await response.json();
+                let generatedText = '';
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    generatedText = result.candidates[0].content.parts[0].text;
+                    reportOutput.textContent = generatedText;
+
+                    // Save to Firestore after successful generation
+                    if (db && userId) {
+                        const reportCollectionPath = `artifacts/${appId}/users/${userId}/kindergarten_reports`;
+                        await addDoc(collection(db, reportCollectionPath), {
+                            childName: childName,
+                            ageGroup: ageGroup,
+                            keywords: keywords,
+                            generatedReport: generatedText,
+                            timestamp: serverTimestamp() // Use server timestamp for consistent ordering
+                        });
+                        console.log("Report saved to Firestore!");
+                    } else {
+                        console.warn("Firestore not initialized or user not authenticated. Report not saved.");
+                    }
+
+                } else {
+                    errorMessageDiv.textContent = '알림장 생성에 실패했습니다. 응답 형식이 예상과 다릅니다.';
+                }
+
+            } catch (error) {
+                console.error('알림장 생성 중 오류 발생:', error);
+                errorMessageDiv.textContent = `알림장 생성 중 오류가 발생했습니다: ${error.message}`;
+            } finally {
+                loadingSpinner.style.display = 'none';
+                generateBtn.disabled = false;
+                suggestMessageBtn.disabled = false;
+            }
+        }
+
+        /**
+         * Suggests an additional message for parents using the Gemini API.
+         */
+        async function suggestAdditionalMessage() {
+            const childName = childNameInput.value.trim();
+            const keywords = keywordsInput.value.trim();
+            const activeAgeButton = document.querySelector('.age-button.active');
+            const ageGroup = activeAgeButton ? activeAgeButton.dataset.age : '정보 없음';
+
+            if (!childName) {
+                errorMessageDiv.textContent = '아이 이름을 입력해주세요.';
+                return;
+            }
+            if (!keywords) {
+                errorMessageDiv.textContent = '오늘의 키워드를 입력해주세요.';
+                return;
+            }
+
+            errorMessageDiv.textContent = '';
+            suggestMessageSpinner.style.display = 'block';
+            generateBtn.disabled = true;
+            suggestMessageBtn.disabled = true;
+
+            try {
+                const prompt = `아이 이름: "${childName}", 연령: ${ageGroup}세, 오늘 있었던 키워드: "${keywords}"를 바탕으로 부모님께 보낼 짧고 긍정적인 추가 메시지를 1~2문장으로 제안해줘. 연령에 맞는 발달 특성을 고려해줘.`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API 오류: ${response.status} - ${errorData.error.message || '알 수 없는 오류'}`);
+                }
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const suggestedMessage = result.candidates[0].content.parts[0].text;
+                    reportOutput.textContent += `\n\n--- ✨ 추가 메시지 제안 ✨ ---\n${suggestedMessage}`;
+                } else {
+                    errorMessageDiv.textContent = '추가 메시지 생성에 실패했습니다. 응답 형식이 예상과 다릅니다.';
+                }
+
+            } catch (error) {
+                console.error('추가 메시지 생성 중 오류 발생:', error);
+                errorMessageDiv.textContent = `추가 메시지 생성 중 오류가 발생했습니다: ${error.message}`;
+            } finally {
+                suggestMessageSpinner.style.display = 'none';
+                generateBtn.disabled = false;
+                suggestMessageBtn.disabled = false;
+            }
+        }
+
+        /**
+         * Displays the history modal and loads data from Firestore.
+         */
+        function showHistoryModal() {
+            if (!db || !userId) {
+                errorMessageDiv.textContent = '데이터를 불러올 수 없습니다. 사용자 인증을 기다려주세요.';
+                return;
+            }
+
+            // Show loading spinner for history
+            historyLoadingSpinner.style.display = 'block';
+            historyListContainer.innerHTML = ''; // Clear previous list
+
+            const reportCollectionPath = `artifacts/${appId}/users/${userId}/kindergarten_reports`;
+            const q = query(collection(db, reportCollectionPath), orderBy("timestamp", "desc"));
+
+            // Unsubscribe from previous listener if exists
+            if (unsubscribeFromHistory) {
+                unsubscribeFromHistory();
+            }
+
+            // Set up real-time listener
+            unsubscribeFromHistory = onSnapshot(q, (snapshot) => {
+                historyLoadingSpinner.style.display = 'none'; // Hide spinner once data starts loading
+
+                if (snapshot.empty) {
+                    hideHistoryModal(); // Hide history modal if no records
+                    showNoHistoryMessage('기록된 알림장이 없습니다.'); // Show custom message
+                    return;
+                }
+
+                historyModalOverlay.classList.add('visible'); // Show history modal if records exist
+                historyListContainer.innerHTML = ''; // Clear previous list
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : '날짜 없음';
+                    const listItem = document.createElement('div');
+                    listItem.classList.add('history-item');
+                    listItem.innerHTML = `
+                        <p class="history-item-date">${date}</p>
+                        <p class="history-item-name"><strong>아이 이름:</strong> ${data.childName || 'N/A'}</p>
+                        <p class="history-item-keywords"><strong>키워드:</strong> ${data.keywords || 'N/A'}</p>
+                        <p class="history-item-report"><strong>알림장:</strong> ${data.generatedReport || 'N/A'}</p>
+                    `;
+                    historyListContainer.appendChild(listItem);
+                });
+            }, (error) => {
+                console.error("Error fetching history:", error);
+                historyListContainer.innerHTML = `<p class="error-message">기록을 불러오는 중 오류가 발생했습니다: ${error.message}</p>`;
+                historyLoadingSpinner.style.display = 'none';
+                hideHistoryModal(); // Hide history modal on error
+                showNoHistoryMessage(`기록을 불러오는 중 오류가 발생했습니다: ${error.message}`); // Show error message
+            });
+        }
+
+        /**
+         * Hides the history modal.
+         */
+        function hideHistoryModal() {
+            historyModalOverlay.classList.remove('visible');
+            // Unsubscribe from real-time updates when modal is hidden to prevent memory leaks
+            if (unsubscribeFromHistory) {
+                unsubscribeFromHistory();
+                unsubscribeFromHistory = null;
+            }
+        }
+
+        /**
+         * Displays the no history message modal.
+         * @param {string} message - The message to display.
+         */
+        function showNoHistoryMessage(message) {
+            noHistoryMessageText.textContent = message;
+            noHistoryModalOverlay.classList.add('visible');
+        }
+
+        /**
+         * Hides the no history message modal.
+         */
+        function hideNoHistoryMessage() {
+            noHistoryModalOverlay.classList.remove('visible');
+        }
+    </script>
+</body>
+</html> 
