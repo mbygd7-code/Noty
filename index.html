@@ -358,6 +358,11 @@
             margin-bottom: 5px;
         }
 
+        .history-item-date.missing-date {
+            font-style: italic;
+            color: #9ca3af; /* Lighter gray for missing dates */
+        }
+
         .history-item-name {
             font-size: 1.1rem;
             font-weight: 600;
@@ -365,8 +370,7 @@
             margin-bottom: 5px;
         }
 
-        .history-item-keywords,
-        .history-item-report {
+        .history-item-keywords {
             font-size: 0.95rem;
             color: #4b5563; /* Gray-600 */
             margin-bottom: 5px;
@@ -378,6 +382,53 @@
             border-top: 1px dashed #d1d5db;
             padding-top: 10px;
             margin-top: 10px;
+            position: relative; /* Needed for positioning the copy button */
+        }
+
+        .report-content-text {
+            font-size: 0.95rem;
+            color: #4b5563;
+            margin-top: 8px; /* Space between label/button and text */
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 0px;
+            background-color: #e5e7eb; /* Gray-200 */
+            color: #4b5563; /* Gray-600 */
+            border: none;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .copy-btn:hover {
+            background-color: #d1d5db; /* Gray-300 */
+            transform: scale(1.05);
+        }
+
+        .copy-btn.copied {
+            background-color: #10b981; /* Green-600 */
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .history-error {
+            display: none; /* Hidden by default */
+            position: absolute;
+            top: 65px; /* Position below history icon */
+            right: 20px;
+            color: #ef4444; /* Red-500 */
+            font-size: 0.8rem;
+            font-weight: 500;
+            max-width: 150px;
+            text-align: right;
         }
 
         .history-empty-message {
@@ -386,7 +437,7 @@
             padding: 20px;
         }
 
-        /* Firestore User ID Display */
+        /* User ID Display */
         .user-id-display {
             position: absolute;
             bottom: 10px;
@@ -395,9 +446,25 @@
             font-size: 0.75rem;
             color: #9ca3af; /* Light gray */
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
             max-width: 90%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .user-id-display:hover {
+            color: #6b7280; /* Darker gray on hover */
+        }
+
+        /* Firestore User ID Display */
+        #userIdText {
+            font-size: 0.85rem;
+            font-weight: 500;
+            background-color: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: #374151;
         }
 
         /* New No History Message Modal Styling */
@@ -477,9 +544,10 @@
         <p class="text-center text-gray-600 mb-6">아이 이름과 키워드를 입력하여 부모님께 보낼 알림장과 추가 메시지를 손쉽게 생성하세요!</p>
 
         <!-- History Icon -->
-        <div id="historyIcon" class="history-icon">
+        <div id="historyIcon" class="history-icon" style="opacity: 0.5; cursor: not-allowed;" title="앱 초기화 중...">
             <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89l.33.28L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7s-3.13 7-7 7c-1.51 0-2.91-.49-4.06-1.3l-1.42 1.42C9.17 21.1 10.9 22 13 22c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.25 2.52l.75-1.23l-3.5-2.08V8z"/></svg>
         </div>
+        <p id="historyError" class="history-error"></p>
 
         <!-- Age group buttons -->
         <div class="age-buttons-group">
@@ -500,12 +568,13 @@
         </div>
 
         <div class="button-group">
-            <button id="generateBtn" class="rounded-lg">알림장 생성</button>
-            <button id="suggestMessageBtn" class="rounded-lg">✨ 추가 메시지 제안</button>
+            <button id="generateBtn" class="rounded-lg" disabled>알림장 생성</button>
+            <button id="suggestMessageBtn" class="rounded-lg" disabled>✨ 추가 메시지 제안</button>
         </div>
 
+        <div id="feedbackMessage" class="text-center font-medium mt-4"></div>
+
         <div class="loading-spinner" id="loadingSpinner"></div>
-        <div class="loading-spinner" id="suggestMessageSpinner"></div>
 
 
         <div class="report-output" id="reportOutput">
@@ -514,7 +583,10 @@
         <div id="errorMessage" class="error-message"></div>
 
         <!-- User ID Display -->
-        <div id="userIdDisplay" class="user-id-display"></div>
+        <div id="userIdContainer" class="user-id-display" title="사용자 ID 보기">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24"><path fill="currentColor" d="M19 2H5a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3M8.5 6A2.5 2.5 0 1 1 6 8.5A2.5 2.5 0 0 1 8.5 6m5 9.5H12a4.5 4.5 0 0 0-9 0v.5h11v-.5a2.5 2.5 0 0 1-1.5-2.34V13a2.66 2.66 0 0 1 .55-1.5H16a1 1 0 1 1 0 2h-1.25a4.41 4.41 0 0 0-.25 1.5m4 2a2.5 2.5 0 1 1 2.5-2.5a2.5 2.5 0 0 1-2.5 2.5"/></svg>
+            <span id="userIdText" style="display: none; margin-left: 8px;"></span>
+        </div>
     </div>
 
     <!-- History Modal -->
@@ -539,372 +611,8 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Vercel-ready script -->
+    <script type="module" src="script.js"></script>
 
-        // Global variables for Firebase (MUST BE USED)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let app;
-        let db;
-        let auth;
-        let userId = null;
-        let unsubscribeFromHistory = null; // To store the unsubscribe function for onSnapshot
-
-        // Initialize Firebase and authenticate
-        async function initializeFirebase() {
-            try {
-                if (Object.keys(firebaseConfig).length > 0) {
-                    app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-
-                    onAuthStateChanged(auth, async (user) => {
-                        if (user) {
-                            userId = user.uid;
-                            document.getElementById('userIdDisplay').textContent = `사용자 ID: ${userId}`;
-                            console.log("Firebase authenticated. User ID:", userId);
-                            // No need to setup history listener immediately on auth change
-                            // It will be set up when the history icon is clicked.
-                        } else {
-                            // Sign in anonymously if no initial token or user
-                            if (initialAuthToken) {
-                                await signInWithCustomToken(auth, initialAuthToken);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
-                        }
-                    });
-                } else {
-                    console.error("Firebase config is missing. Cannot initialize Firebase.");
-                    errorMessageDiv.textContent = 'Firebase 설정이 누락되어 데이터를 저장할 수 없습니다.';
-                }
-            } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                errorMessageDiv.textContent = `Firebase 초기화 중 오류 발생: ${error.message}`;
-            }
-        }
-
-        // Call Firebase initialization
-        initializeFirebase();
-
-        // Get references to DOM elements
-        const childNameInput = document.getElementById('childName');
-        const keywordsInput = document.getElementById('keywords');
-        const generateBtn = document.getElementById('generateBtn');
-        const suggestMessageBtn = document.getElementById('suggestMessageBtn');
-        const reportOutput = document.getElementById('reportOutput');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const suggestMessageSpinner = document.getElementById('suggestMessageSpinner');
-        const errorMessageDiv = document.getElementById('errorMessage');
-        const ageButtons = document.querySelectorAll('.age-button');
-
-        // History Modal Elements
-        const historyIcon = document.getElementById('historyIcon');
-        const historyModalOverlay = document.getElementById('historyModalOverlay');
-        const modalCloseBtn = document.getElementById('modalCloseBtn');
-        const historyListContainer = document.getElementById('historyListContainer');
-        const historyLoadingSpinner = document.getElementById('historyLoadingSpinner');
-
-        // New No History Message Modal Elements
-        const noHistoryModalOverlay = document.getElementById('noHistoryModalOverlay');
-        const noHistoryMessageText = document.getElementById('noHistoryMessageText');
-        const noHistoryCloseBtn = document.getElementById('noHistoryCloseBtn');
-
-
-        // Event listeners for the main buttons
-        generateBtn.addEventListener('click', generateReport);
-        suggestMessageBtn.addEventListener('click', suggestAdditionalMessage);
-
-        // Event listeners for age buttons
-        ageButtons.forEach(button => {
-            button.addEventListener('click', (event) => {
-                ageButtons.forEach(btn => btn.classList.remove('active'));
-                event.target.classList.add('active');
-                const ageGroup = event.target.dataset.age;
-                populateKeywordsByAge(ageGroup);
-            });
-        });
-
-        // Event listeners for History Modal
-        historyIcon.addEventListener('click', showHistoryModal);
-        modalCloseBtn.addEventListener('click', hideHistoryModal);
-        historyModalOverlay.addEventListener('click', (event) => {
-            if (event.target === historyModalOverlay) { // Close only if clicking on the overlay itself
-                hideHistoryModal();
-            }
-        });
-
-        // Event listener for No History Message Modal
-        noHistoryCloseBtn.addEventListener('click', hideNoHistoryMessage);
-        noHistoryModalOverlay.addEventListener('click', (event) => {
-            if (event.target === noHistoryModalOverlay) {
-                hideNoHistoryMessage();
-            }
-        });
-
-        /**
-         * Populates the keywords textarea based on the selected age group.
-         * @param {string} ageGroup - The selected age group ('0-2', '3', '4', '5').
-         */
-        function populateKeywordsByAge(ageGroup) {
-            let keywords = '';
-            switch (ageGroup) {
-                case '0-2':
-                    keywords = '기어다니며 탐색함, 까꿍 놀이 즐김, 옹알이하며 의사 표현, 블록 쌓기 시도, 손가락으로 가리키며 요구, 엄마/아빠에게 애착 표현';
-                    break;
-                case '3': // 만3세
-                    keywords = '친구와 함께 놀이함, 블록으로 성 만들기, 질문이 많아짐, 스스로 옷 입기 시도, 간단한 규칙 이해, 좋아하는 그림 그리기';
-                    break;
-                case '4': // 만4세
-                    keywords = '역할 놀이에 적극 참여, 친구와 양보하며 놀이, 동화 내용 이해, 글자 모양에 관심, 감정 표현 및 조절, 대근육 발달(뛰기, 점프)';
-                    break;
-                case '5': // 만5세
-                    keywords = '친구들과 협동하여 프로젝트 완성, 자신의 생각 논리적으로 표현, 한글에 관심 많음, 스스로 정리 정돈, 문제 해결 능력 발휘, 유창하게 대화';
-                    break;
-                default:
-                    keywords = '';
-            }
-            keywordsInput.value = keywords;
-            errorMessageDiv.textContent = ''; // Clear any previous error messages
-        }
-
-
-        /**
-         * Generates the daily report using the Gemini API and saves it to Firestore.
-         */
-        async function generateReport() {
-            const childName = childNameInput.value.trim();
-            const keywords = keywordsInput.value.trim();
-            const activeAgeButton = document.querySelector('.age-button.active');
-            const ageGroup = activeAgeButton ? activeAgeButton.dataset.age : '정보 없음';
-
-            if (!childName) {
-                errorMessageDiv.textContent = '아이 이름을 입력해주세요.';
-                return;
-            }
-            if (!keywords) {
-                errorMessageDiv.textContent = '오늘의 키워드를 입력해주세요.';
-                return;
-            }
-
-            reportOutput.textContent = '';
-            errorMessageDiv.textContent = '';
-            loadingSpinner.style.display = 'block';
-            generateBtn.disabled = true;
-            suggestMessageBtn.disabled = true;
-
-            try {
-                const prompt = `유치원 교사가 부모님께 보내는 알림장 문장을 작성해줘. 아이 이름은 "${childName}"이고, 연령은 ${ageGroup}세이며, 오늘 있었던 일의 키워드는 다음과 같아: "${keywords}". 연령에 맞는 발달 특성을 고려하여 자연스럽고 긍정적인 어조로 작성해줘.`;
-
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`API 오류: ${response.status} - ${errorData.error.message || '알 수 없는 오류'}`);
-                }
-
-                const result = await response.json();
-                let generatedText = '';
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    generatedText = result.candidates[0].content.parts[0].text;
-                    reportOutput.textContent = generatedText;
-
-                    // Save to Firestore after successful generation
-                    if (db && userId) {
-                        const reportCollectionPath = `artifacts/${appId}/users/${userId}/kindergarten_reports`;
-                        await addDoc(collection(db, reportCollectionPath), {
-                            childName: childName,
-                            ageGroup: ageGroup,
-                            keywords: keywords,
-                            generatedReport: generatedText,
-                            timestamp: serverTimestamp() // Use server timestamp for consistent ordering
-                        });
-                        console.log("Report saved to Firestore!");
-                    } else {
-                        console.warn("Firestore not initialized or user not authenticated. Report not saved.");
-                    }
-
-                } else {
-                    errorMessageDiv.textContent = '알림장 생성에 실패했습니다. 응답 형식이 예상과 다릅니다.';
-                }
-
-            } catch (error) {
-                console.error('알림장 생성 중 오류 발생:', error);
-                errorMessageDiv.textContent = `알림장 생성 중 오류가 발생했습니다: ${error.message}`;
-            } finally {
-                loadingSpinner.style.display = 'none';
-                generateBtn.disabled = false;
-                suggestMessageBtn.disabled = false;
-            }
-        }
-
-        /**
-         * Suggests an additional message for parents using the Gemini API.
-         */
-        async function suggestAdditionalMessage() {
-            const childName = childNameInput.value.trim();
-            const keywords = keywordsInput.value.trim();
-            const activeAgeButton = document.querySelector('.age-button.active');
-            const ageGroup = activeAgeButton ? activeAgeButton.dataset.age : '정보 없음';
-
-            if (!childName) {
-                errorMessageDiv.textContent = '아이 이름을 입력해주세요.';
-                return;
-            }
-            if (!keywords) {
-                errorMessageDiv.textContent = '오늘의 키워드를 입력해주세요.';
-                return;
-            }
-
-            errorMessageDiv.textContent = '';
-            suggestMessageSpinner.style.display = 'block';
-            generateBtn.disabled = true;
-            suggestMessageBtn.disabled = true;
-
-            try {
-                const prompt = `아이 이름: "${childName}", 연령: ${ageGroup}세, 오늘 있었던 키워드: "${keywords}"를 바탕으로 부모님께 보낼 짧고 긍정적인 추가 메시지를 1~2문장으로 제안해줘. 연령에 맞는 발달 특성을 고려해줘.`;
-
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`API 오류: ${response.status} - ${errorData.error.message || '알 수 없는 오류'}`);
-                }
-
-                const result = await response.json();
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const suggestedMessage = result.candidates[0].content.parts[0].text;
-                    reportOutput.textContent += `\n\n--- ✨ 추가 메시지 제안 ✨ ---\n${suggestedMessage}`;
-                } else {
-                    errorMessageDiv.textContent = '추가 메시지 생성에 실패했습니다. 응답 형식이 예상과 다릅니다.';
-                }
-
-            } catch (error) {
-                console.error('추가 메시지 생성 중 오류 발생:', error);
-                errorMessageDiv.textContent = `추가 메시지 생성 중 오류가 발생했습니다: ${error.message}`;
-            } finally {
-                suggestMessageSpinner.style.display = 'none';
-                generateBtn.disabled = false;
-                suggestMessageBtn.disabled = false;
-            }
-        }
-
-        /**
-         * Displays the history modal and loads data from Firestore.
-         */
-        function showHistoryModal() {
-            if (!db || !userId) {
-                errorMessageDiv.textContent = '데이터를 불러올 수 없습니다. 사용자 인증을 기다려주세요.';
-                return;
-            }
-
-            // Show loading spinner for history
-            historyLoadingSpinner.style.display = 'block';
-            historyListContainer.innerHTML = ''; // Clear previous list
-
-            const reportCollectionPath = `artifacts/${appId}/users/${userId}/kindergarten_reports`;
-            const q = query(collection(db, reportCollectionPath), orderBy("timestamp", "desc"));
-
-            // Unsubscribe from previous listener if exists
-            if (unsubscribeFromHistory) {
-                unsubscribeFromHistory();
-            }
-
-            // Set up real-time listener
-            unsubscribeFromHistory = onSnapshot(q, (snapshot) => {
-                historyLoadingSpinner.style.display = 'none'; // Hide spinner once data starts loading
-
-                if (snapshot.empty) {
-                    hideHistoryModal(); // Hide history modal if no records
-                    showNoHistoryMessage('기록된 알림장이 없습니다.'); // Show custom message
-                    return;
-                }
-
-                historyModalOverlay.classList.add('visible'); // Show history modal if records exist
-                historyListContainer.innerHTML = ''; // Clear previous list
-                
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : '날짜 없음';
-                    const listItem = document.createElement('div');
-                    listItem.classList.add('history-item');
-                    listItem.innerHTML = `
-                        <p class="history-item-date">${date}</p>
-                        <p class="history-item-name"><strong>아이 이름:</strong> ${data.childName || 'N/A'}</p>
-                        <p class="history-item-keywords"><strong>키워드:</strong> ${data.keywords || 'N/A'}</p>
-                        <p class="history-item-report"><strong>알림장:</strong> ${data.generatedReport || 'N/A'}</p>
-                    `;
-                    historyListContainer.appendChild(listItem);
-                });
-            }, (error) => {
-                console.error("Error fetching history:", error);
-                historyListContainer.innerHTML = `<p class="error-message">기록을 불러오는 중 오류가 발생했습니다: ${error.message}</p>`;
-                historyLoadingSpinner.style.display = 'none';
-                hideHistoryModal(); // Hide history modal on error
-                showNoHistoryMessage(`기록을 불러오는 중 오류가 발생했습니다: ${error.message}`); // Show error message
-            });
-        }
-
-        /**
-         * Hides the history modal.
-         */
-        function hideHistoryModal() {
-            historyModalOverlay.classList.remove('visible');
-            // Unsubscribe from real-time updates when modal is hidden to prevent memory leaks
-            if (unsubscribeFromHistory) {
-                unsubscribeFromHistory();
-                unsubscribeFromHistory = null;
-            }
-        }
-
-        /**
-         * Displays the no history message modal.
-         * @param {string} message - The message to display.
-         */
-        function showNoHistoryMessage(message) {
-            noHistoryMessageText.textContent = message;
-            noHistoryModalOverlay.classList.add('visible');
-        }
-
-        /**
-         * Hides the no history message modal.
-         */
-        function hideNoHistoryMessage() {
-            noHistoryModalOverlay.classList.remove('visible');
-        }
-    </script>
 </body>
 </html> 
